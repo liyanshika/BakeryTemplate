@@ -1,7 +1,7 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# Docs: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy ASP app to Azure Web App - babu
+name: Build and Deploy ASP.NET App to Azure
 
 on:
   push:
@@ -13,55 +13,63 @@ jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read # Required for actions/checkout
 
     steps:
+      # Pull source code
       - uses: actions/checkout@v4
 
-      - name: Setup MSBuild path
-        uses: microsoft/setup-msbuild@v1.0.2
-
-      - name: Setup NuGet
-        uses: NuGet/setup-nuget@v1.0.5
-
-      # Debug: List files to find the .sln location
+      # Show all files in repo (debugging if .sln not found)
       - name: List repo files
         run: dir -Recurse
 
+      # Setup MSBuild
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v1.0.2
+
+      # Setup NuGet
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v1.0.5
+
+      # Restore NuGet packages (change MyApp.sln to your actual solution file)
       - name: Restore NuGet packages
-        run: nuget restore BakeryTemplate.sln
+        run: nuget restore MyApp.sln
 
-      - name: Publish to folder
-        run: msbuild /nologo /verbosity:m /t:Build /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir="\published\"
+      # Build and publish to folder
+      - name: Publish app
+        run: msbuild MyApp.sln /p:Configuration=Release /p:DeployOnBuild=true /p:PublishProfile=FolderProfile /p:PublishDir="$(Build.ArtifactStagingDirectory)\published"
 
-      - name: Upload artifact for deployment job
+      # Upload published files as artifact
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: ASP-app
-          path: '/published/**'
+          path: $(Build.ArtifactStagingDirectory)\published\**
 
   deploy:
     runs-on: windows-latest
     needs: build
     permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
+      id-token: write # Required for requesting the JWT
+      contents: read # Required for actions/checkout
 
     steps:
-      - name: Download artifact from build job
+      # Download artifact from build job
+      - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: ASP-app
-      
-      - name: Login to Azure
+
+      # Login to Azure
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.__clientidsecretname__ }}
           tenant-id: ${{ secrets.__tenantidsecretname__ }}
           subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
 
+      # Deploy to Azure Web App
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'babu'
