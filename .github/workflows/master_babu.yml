@@ -24,8 +24,12 @@ jobs:
       - name: Setup NuGet
         uses: NuGet/setup-nuget@v1.0.5
 
+      # Debug: List files to find the .sln location
+      - name: List repo files
+        run: dir -Recurse
+
       - name: Restore NuGet packages
-        run: nuget restore
+        run: nuget restore BakeryTemplate.sln
 
       - name: Publish to folder
         run: msbuild /nologo /verbosity:m /t:Build /t:pipelinePreDeployCopyAllFilesToOneFolder /p:_PackageTempDir="\published\"
@@ -52,9 +56,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_46C30A2A32CB436D80F4C41BD35DE974 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D338216FC1AF47CE846DA5FA14E7177E }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5A2996EEDDDF4BE487D3DFFC9978427D }}
+          client-id: ${{ secrets.__clientidsecretname__ }}
+          tenant-id: ${{ secrets.__tenantidsecretname__ }}
+          subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -63,4 +67,3 @@ jobs:
           app-name: 'babu'
           slot-name: 'Production'
           package: .
-          
